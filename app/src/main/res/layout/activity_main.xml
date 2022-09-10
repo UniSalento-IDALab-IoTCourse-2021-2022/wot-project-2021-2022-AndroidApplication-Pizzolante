@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+    <Button
+            android:text="Machinist"
+            android:layout_gravity="center"
+            android:layout_width="160dp"
+            android:layout_height="50dp" android:id="@+id/MButton"
+            app:backgroundTint="#FF5722" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="448dp"
+            app:layout_constraintHorizontal_bias="0.484"/>
+    <Button
+            android:text="Worker"
+            android:layout_gravity="center"
+            android:layout_width="160dp"
+            android:layout_height="50dp" android:id="@+id/WButton"
+            app:backgroundTint="#FF5722" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="384dp"
+            app:layout_constraintHorizontal_bias="0.484"/>
+    <ImageView
+            android:layout_width="151dp"
+            android:layout_height="171dp"
+            app:srcCompat="@drawable/worker_worker_icon_with_png_and_vector_format_for_free_481601"
+            android:id="@+id/WorkerImage"
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/Title" app:layout_constraintVertical_bias="1.0"/>
+    <TextView
+            android:text="Benvenuto!"
+            android:textSize="32sp"
+            android:gravity="center"
+            android:layout_width="409dp"
+            android:layout_height="46dp" android:id="@+id/Title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:fontFamily="sans-serif-medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/CButton" android:layout_marginBottom="56dp"
+            app:layout_constraintHorizontal_bias="0.5"/>
+    <Button
+            android:text="Calibrazione"
+            android:layout_gravity="center"
+            android:layout_width="160dp"
+            android:layout_height="50dp" android:id="@+id/CButton"
+            app:backgroundTint="#FF5722" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="320dp"
+            app:layout_constraintHorizontal_bias="0.485"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
