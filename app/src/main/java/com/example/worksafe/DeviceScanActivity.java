@@ -7,19 +7,25 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 
@@ -62,7 +68,7 @@ public class DeviceScanActivity extends Activity {
         lv.setAdapter(adapter);
 
         requestPermission();
-        //onRequestPermissionsResult();
+
         scanLeDevice();
 
     }
@@ -176,51 +182,6 @@ public class DeviceScanActivity extends Activity {
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_FINE_LOCATION: {
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "fine location permission granted");
-                } else {
-                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("Functionality limited");
-                    builder.setMessage("Since location access has not been granted, this app will not be able to discover beacons.");
-                    builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                        }
-
-                    });
-                    builder.show();
-                }
-                return;
-            }
-            case PERMISSION_REQUEST_BACKGROUND_LOCATION: {
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "background location permission granted");
-                } else {
-                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("Functionality limited");
-                    builder.setMessage("Since background location access has not been granted, this app will not be able to discover beacons when in the background.");
-                    builder.setPositiveButton(android.R.string.ok, null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                        }
-
-                    });
-                    builder.show();
-                }
-                return;
-            }
-        }
-    }
 
 
 
