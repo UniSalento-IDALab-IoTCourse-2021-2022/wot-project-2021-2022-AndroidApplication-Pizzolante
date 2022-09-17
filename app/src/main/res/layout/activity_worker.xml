@@ -6,9 +6,10 @@
     <Button
             android:text="Inizia scansione"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/Scan"
+            android:layout_height="wrap_content" android:id="@+id/Start"
             app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.612"/>
     <TextView
             android:text="Ricordati di attivare il Bluetooth e il GPS!"
             android:textSize="16sp"
@@ -16,5 +17,26 @@
             android:layout_height="wrap_content" android:id="@+id/Remainder"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintVertical_bias="0.574"/>
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintVertical_bias="0.681"
+            app:layout_constraintHorizontal_bias="0.491"/>
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:hint=""
+            android:ems="10"
+            android:id="@+id/editTextWorkerID"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintVertical_bias="0.408"
+            style="@style/Widget.AppCompat.AutoCompleteTextView"
+            app:backgroundTint="@color/orange_500" />
+    <TextView
+            android:text="Inserisci il tuo ID*"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:id="@+id/textView3"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintHorizontal_bias="0.328"
+            app:layout_constraintVertical_bias="0.366"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

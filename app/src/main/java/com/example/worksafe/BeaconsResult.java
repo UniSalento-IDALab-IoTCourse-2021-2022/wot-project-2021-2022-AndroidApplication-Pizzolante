@@ -1,12 +1,23 @@
 package com.example.worksafe;
 
+import android.os.ParcelUuid;
+
 public class BeaconsResult {
 
     private String name;
     private String mac;
     private String uuid;
-    private int major;
-    private int minor;
+
+    public BeaconsResult(String name, String mac, String uuid) {
+        this.name = name;
+        this.mac = mac;
+        this.uuid = uuid;
+    }
+
+    public BeaconsResult(String name, String mac) {
+        this.name = name;
+        this.mac = mac;
+    }
 
     public String getName() {
         return name;
@@ -18,13 +29,5 @@ public class BeaconsResult {
 
     public String getUuid() {
         return uuid;
-    }
-
-    public int getMajor() {
-        return major;
-    }
-
-    public int getMinor() {
-        return minor;
     }
 }

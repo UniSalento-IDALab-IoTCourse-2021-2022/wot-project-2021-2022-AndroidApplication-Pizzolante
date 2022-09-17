@@ -28,6 +28,12 @@ android {
     }
 }
 
+repositories {
+    maven {
+        url "https://repo.eclipse.org/content/repositories/paho-releases/"
+    }
+}
+
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
@@ -38,7 +44,6 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-
-
-
+    implementation('org.eclipse.paho:org.eclipse.paho.android.service:1.0.2') {exclude module: 'support-v4'}
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
 }
