@@ -32,7 +32,7 @@ public class MachinistActivity extends AppCompatActivity {
                     builder.setPositiveButton(android.R.string.ok, null);
                     builder.show();
                 }else{
-                    Intent range = new Intent(MachinistActivity.this, RiskListenActivity.class);
+                    Intent range = new Intent(MachinistActivity.this, DangerListenActivity.class);
                     range.putExtra("MACHINIST_ID",textWorkerID.getText().toString());
                     range.putExtra("MACHINERY_ID",textMachineryID.getText().toString());
                     startActivity(range);

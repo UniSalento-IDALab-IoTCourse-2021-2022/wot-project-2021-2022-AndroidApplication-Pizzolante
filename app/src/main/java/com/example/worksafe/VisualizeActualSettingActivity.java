@@ -18,7 +18,7 @@ public class VisualizeActualSettingActivity extends AppCompatActivity {
 
     private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
-    private String BASE_URL = "http://192.168.43.237:3000";
+    private final String BASE_URL = "http://172.20.10.6:3000";
     private static SettingsResult actualSettings;
 
     public static SettingsResult getActualSettings() {

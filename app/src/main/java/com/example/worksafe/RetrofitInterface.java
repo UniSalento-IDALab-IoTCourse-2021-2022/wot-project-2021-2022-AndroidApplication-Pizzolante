@@ -16,7 +16,7 @@ public interface RetrofitInterface {
     @GET("/beacons")
     Call<List<BeaconsResult>> getBeacons ();
 
-    @POST("/risks")
-    Call<RiskResult> insertRisk (@Body HashMap<String,String> map);
+    @POST("/dangers")
+    Call<DangerResult> insertRisk (@Body DangerResult danger);
 
 }

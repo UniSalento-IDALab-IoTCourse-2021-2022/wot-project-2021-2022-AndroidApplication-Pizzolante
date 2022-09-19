@@ -6,7 +6,6 @@ import android.bluetooth.le.*;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.widget.*;
 import androidx.annotation.RequiresApi;
@@ -21,7 +20,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -35,13 +34,13 @@ public class DeviceScanActivity extends Activity {
     ArrayAdapter<String> adapter;
     private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
-    private String BASE_URL = "http://192.168.43.237:3000";
+    private String BASE_URL = "http://172.20.10.6:3000";
     private List<ScanFilter> listOfFilters;
     private ArrayList<BeaconsResult> foundDevicesList;
     private SettingsResult actualSetting;
-    private RiskResult risk;
+    private DangerResult danger;
     private String workerID;
-    private String topic = "worksafe/risks";
+    private String topic = "worksafe/dangers";
     private String clientId = MqttClient.generateClientId();
     private MqttAndroidClient client ;
 
@@ -159,19 +158,27 @@ public class DeviceScanActivity extends Activity {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
+
             // Getting the device
             BluetoothDevice device = result.getDevice();
-            BeaconsResult foundDevice = new BeaconsResult(device.getName(), device.getAddress(), Arrays.toString(device.getUuids()));
-            foundDevicesList.add(foundDevice);
 
-            if (!device_mac.contains(foundDevice.getMac())) {
-                device_mac.add(foundDevice.getMac());
+            // device_rssi.set(device_index, result.getRssi());
+            if (!device_mac.contains(device.getAddress())) {
+                device_mac.add(device.getAddress());
                 device_rssi.add(result.getRssi());      // Prendo l'RSSI una sola volta
-                device_info.add(String.format("Device: " + foundDevice.getName()
-                        + "\nMAC:" + foundDevice.getMac()
+                device_info.add(String.format("Device: " + device.getName()
+                        + "\nMAC:" + device.getAddress()
+                        + "\nRSSI: " + result.getRssi() + ""));
+                adapter.notifyDataSetChanged();
+            }else{
+                 int index = device_mac.indexOf(device.getAddress());
+                 device_rssi.set(index,result.getRssi());
+                 device_info.set(index, String.format("Device: " + device.getName()
+                        + "\nMAC:" + device.getAddress()
                         + "\nRSSI: " + result.getRssi() + ""));
                 adapter.notifyDataSetChanged();
             }
+
 
             //double[] dist= calculateDistances();
             //evaluateDistance(dist);  ====> stopLeScan() if Risk != null
@@ -179,16 +186,16 @@ public class DeviceScanActivity extends Activity {
             Date date = new Date();
             Timestamp timestamp = new Timestamp(date.getTime());
             // Creo il rischio
-            RiskResult risk = new RiskResult(workerID,
-                        "Attenzione!",
-                                 timestamp.toString(),
-                                 device.getName());
+            DangerResult danger = new DangerResult(workerID,
+                                     device.getName(),
+                              " Attenzione!",
+                                  timestamp.toString());
 
-            MqttPublish(client,topic,risk);
-            notifyFoundDevice("Attenzione!");
-            //sendRiskResult(risk);
-            device_rssi.clear();
-            //scanLeDevice();
+            //MqttPublish(client,topic,danger);
+            //notifyFoundDevice("Attenzione!");
+            //sendRiskResult(danger);
+            //stopLeScan();
+
         }
     };
 
@@ -200,6 +207,8 @@ public class DeviceScanActivity extends Activity {
         foundDevicesList = new ArrayList<>();
     }
 
+    // TODO: Fare in modo di stoppare la scansione quando si rileva un pericolo e si resume quando
+    //  si preme ok sulla notifica
     // Meotodo che ferma la scansione dei dispositivi BLE
     private void stopLeScan() {
         bluetoothLeScanner.stopScan(leScanCallback);
@@ -217,13 +226,12 @@ public class DeviceScanActivity extends Activity {
         }
 
         //Create the intent
-        Intent intent=new Intent(this,DeviceScanActivity.class);
-        PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),0,intent,0);
-        // TODO 2: Impostare l'azione di far ripartire la scansione quando premo ok sulla notifica
+        //Intent intent=new Intent(this,DeviceScanActivity.class);
+        //PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),0,intent,0);
         // Create the notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "DEVICE_FOUND")
                 .setSmallIcon(R.drawable.worker_worker_icon_with_png_and_vector_format_for_free_481601)
-                .addAction(0,"OK",pendingIntent)
+                //.addAction(0,"OK",pendingIntent)
                 .setContentTitle("Pericolo!")
                 .setContentText(message)
                 .setPriority(2)
@@ -305,7 +313,7 @@ public class DeviceScanActivity extends Activity {
     }
 
     // Metodo per la valutazione dela distanza di sicurezza partendo dall'array delle distanze finali
-    public RiskResult evaluateDistance(double[] distances) {
+    public DangerResult evaluateDistance(double[] distances) {
         for (int i = 0; i < distances.length; i++) {
             if (distances[i] < 5.0) {
                 // Genero il messaggio
@@ -316,14 +324,43 @@ public class DeviceScanActivity extends Activity {
                 Timestamp timestamp = new Timestamp(date.getTime());
                 notifyFoundDevice(message);
                 // Creo il rischio
-                return new RiskResult("", message, timestamp.toString(),deviceName);
+                return new DangerResult("", message, timestamp.toString(),deviceName);
             }
         }
         return null;
     }
 
-    public void sendRiskResult(RiskResult riskToPub) {
-        // TODO 3: Se i messaggi MQTT arrivano correttamente bisogna inviare il rischio al db con una POST
+    // Metodo per l'invio del rischio rilevato al server per il salvataggio nel database
+    // TODO: Risolvere il messaggio " end of input at line 1 column 1 path $ "
+    public void sendRiskResult(DangerResult DangerToSend) {
+
+        // Creo l'oggetto Retrofit con il base url e il convertitore JSON
+        retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        // Instanzio l''interfaccia utilizzando l'oggetto appena creato
+        retrofitInterface = retrofit.create(RetrofitInterface.class);
+        // Creo una chiamata (POST) che ritorna una lista di DangerResult
+        Call<DangerResult> call = retrofitInterface.insertRisk(DangerToSend);
+        // Inserisco la chiamata in una coda
+        call.enqueue(new Callback<DangerResult>() {
+            @Override
+            public void onResponse(Call<DangerResult> call, Response<DangerResult> response) {
+                if (response.code() == 200) {
+                    Toast.makeText(DeviceScanActivity.this, "Risk saved on Db correctly",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+
+
+            @Override
+            public void onFailure(Call<DangerResult> call, Throwable t) {
+                Toast.makeText(DeviceScanActivity.this, t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     // Metodo che effettua la connessione al broker
@@ -349,15 +386,17 @@ public class DeviceScanActivity extends Activity {
     }
 
     // Metodo che pubblica il messaggio del client sul topic /worksafe/risks
-    public void MqttPublish(MqttAndroidClient client, String topic, RiskResult risk) {
-        String payload = risk.getBeaconId();;
+    public void MqttPublish(MqttAndroidClient client, String topic, DangerResult danger) {
+        String payload = danger.getBeaconId();
         byte[] encodedPayload = new byte[0];
         try {
-            encodedPayload = payload.getBytes("UTF-8");
+            encodedPayload = payload.getBytes(StandardCharsets.UTF_8);
             MqttMessage message = new MqttMessage(encodedPayload);
-            message.setRetained(true);
             client.publish(topic, message);
-        } catch (UnsupportedEncodingException | MqttException e) {
+            // Avviso di corretta pubblicazione
+            Toast.makeText(DeviceScanActivity.this, "Published: "+message,
+                    Toast.LENGTH_LONG).show();
+        } catch (MqttException e) {
             e.printStackTrace();
         }
     }

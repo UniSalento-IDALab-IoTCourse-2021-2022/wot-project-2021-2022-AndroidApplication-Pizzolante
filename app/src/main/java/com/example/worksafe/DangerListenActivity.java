@@ -1,22 +1,35 @@
 package com.example.worksafe;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.*;
 
-public class RiskListenActivity extends AppCompatActivity {
+public class DangerListenActivity extends AppCompatActivity {
+
+    private String machinistId;
+    private String machineryId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_risk_listen);
 
+        // ID del machinist e del beacon dall'activity precedente
+        machinistId =  getIntent().getExtras().getString("MACHINIST_ID");
+        machineryId = getIntent().getExtras().getString("MACHINERY_ID");
+
         // Definisco il topic
-        String topic = "worksafe/risks";
+        String topic = "worksafe/dangers";
 
         // Creo il client MQTT
         String clientId = MqttClient.generateClientId();
@@ -39,7 +52,7 @@ public class RiskListenActivity extends AppCompatActivity {
                 // Mi disconnetto
                 MqttDisconnect(client);
                 // Torno alla schermata precedente
-                Intent previous = new Intent(RiskListenActivity.this, MachinistActivity.class);
+                Intent previous = new Intent(DangerListenActivity.this, MachinistActivity.class);
                 startActivity(previous);
             }
         });
@@ -54,7 +67,7 @@ public class RiskListenActivity extends AppCompatActivity {
             token.setActionCallback(new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(RiskListenActivity.this, "Connected to "+client.getServerURI(),
+                    Toast.makeText(DangerListenActivity.this, "Connected to "+client.getServerURI(),
                             Toast.LENGTH_LONG).show();
                     // Una volta connesso correttamente, mi sottoscrivo
                     MqttSubscribe(client,topic);
@@ -62,7 +75,7 @@ public class RiskListenActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Toast.makeText(RiskListenActivity.this, "CONNECTION FAILED",
+                    Toast.makeText(DangerListenActivity.this, "CONNECTION FAILED",
                             Toast.LENGTH_LONG).show();
                 }
             });
@@ -80,14 +93,14 @@ public class RiskListenActivity extends AppCompatActivity {
             subToken.setActionCallback(new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(RiskListenActivity.this, "Correctly subscribed to "+topic,
+                    Toast.makeText(DangerListenActivity.this, "Correctly subscribed to "+topic,
                             Toast.LENGTH_LONG).show();
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken,
                                       Throwable exception) {
-                    Toast.makeText(RiskListenActivity.this, "SUBSCRIPTION FAILED",
+                    Toast.makeText(DangerListenActivity.this, "SUBSCRIPTION FAILED",
                             Toast.LENGTH_LONG).show();
 
                 }
@@ -105,17 +118,16 @@ public class RiskListenActivity extends AppCompatActivity {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Toast.makeText(RiskListenActivity.this, "Message arrived to topic "+topic,
-                        Toast.LENGTH_LONG).show();
-                /*
-                    TODO: 1- Estraggo il messaggio
-                          2- Controllo l'ID del macchinario: se è associato a me:
-                                2.1- Notifica
-                                2.2- Creo l'oggetto RiskResult
-                                2.3- POST per salvataggio nel db
-                 */
+                Toast.makeText(DangerListenActivity.this, "Message: "+message+"\narrived to topic "+topic,
+                        Toast.LENGTH_SHORT).show();
 
+                // Estraggo il messaggio e lo trasformo in tipo String
+                String beaconId = new String(message.getPayload());
 
+                // Controllo che l'ID del beacon presente nel messaggio sia uguale a quello del mio macchinario
+                if(machineryId.equals(beaconId)){
+                   notifyRiskMachinist("Un worker è vicino al tuo macchinario!");
+                }
             }
 
             @Override
@@ -132,14 +144,14 @@ public class RiskListenActivity extends AppCompatActivity {
             disconToken.setActionCallback(new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(RiskListenActivity.this, "Disconnected from "+client.getServerURI(),
+                    Toast.makeText(DangerListenActivity.this, "Disconnected from "+client.getServerURI(),
                             Toast.LENGTH_LONG).show();
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken,
                                       Throwable exception) {
-                    Toast.makeText(RiskListenActivity.this, "DISCONNECTION FAILED",
+                    Toast.makeText(DangerListenActivity.this, "DISCONNECTION FAILED",
                             Toast.LENGTH_LONG).show();
                 }
             });
@@ -155,14 +167,14 @@ public class RiskListenActivity extends AppCompatActivity {
             unsubToken.setActionCallback(new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(RiskListenActivity.this, "Correctly unsubscribed to "+topic,
+                    Toast.makeText(DangerListenActivity.this, "Correctly unsubscribed to "+topic,
                             Toast.LENGTH_LONG).show();
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken,
                                       Throwable exception) {
-                    Toast.makeText(RiskListenActivity.this, "UNSUBSCRIPTION FAILED",
+                    Toast.makeText(DangerListenActivity.this, "UNSUBSCRIPTION FAILED",
                             Toast.LENGTH_LONG).show();
                 }
             });
@@ -170,6 +182,29 @@ public class RiskListenActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+    }
+
+    // Metodo che serve per inviare una notifica con un messaggio
+    private void notifyRiskMachinist(String message) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel("DEVICE_FOUND", "Channel1", importance);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Create the notification
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "DEVICE_FOUND")
+                .setSmallIcon(R.drawable.worker_worker_icon_with_png_and_vector_format_for_free_481601)
+                .setContentTitle("Pericolo!")
+                .setContentText(message)
+                .setPriority(2)
+                .setVibrate(new long[]{1000, 1000});
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.notify(1, builder.build());
     }
 
 }

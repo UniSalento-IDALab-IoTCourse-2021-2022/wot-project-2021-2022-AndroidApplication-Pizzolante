@@ -56,7 +56,7 @@
         </activity>
 
         <activity
-                android:name=".RiskListenActivity"
+                android:name=".DangerListenActivity"
                 android:exported="true"
                 android:theme="@style/Theme.WorkSafe" >
         </activity>

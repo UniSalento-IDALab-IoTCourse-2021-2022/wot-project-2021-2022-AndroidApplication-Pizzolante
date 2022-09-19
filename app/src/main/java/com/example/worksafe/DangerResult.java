@@ -1,13 +1,13 @@
 package com.example.worksafe;
 
-public class RiskResult {
+public class DangerResult {
 
     private String workerId;
     private String beaconId; // Nome del dispositivo
     private String message;
     private String timestamp;
 
-    public RiskResult(String workerId, String beaconId, String message, String timestamp) {
+    public DangerResult(String workerId, String beaconId, String message, String timestamp) {
         this.workerId = workerId;
         this.beaconId = beaconId;
         this.message = message;
