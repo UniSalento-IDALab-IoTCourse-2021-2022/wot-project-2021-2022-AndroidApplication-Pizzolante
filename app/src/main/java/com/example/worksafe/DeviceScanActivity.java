@@ -33,21 +33,16 @@ public class DeviceScanActivity extends Activity {
     private ArrayList<String> device_name;
     private ArrayList<String> device_info;
     ArrayAdapter<String> adapter;
-    private Retrofit retrofit;
+    /*private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
-    private String BASE_URL = "http://10.20.11.166:3000";
+    private String BASE_URL = "http://10.20.11.166:3000";*/
     private List<ScanFilter> listOfFilters;
-    private ArrayList<BeaconsResult> foundDevicesList;
     private SettingsResult actualSetting;
     private String workerID;
     private String topic = "worksafe/dangers";
     private String clientId = MqttClient.generateClientId();
     private MqttAndroidClient client ;
-    /*
-        Array dei dispositivi che si trovano vicini al lavoratore.
-        Serve come appoggio per generare una notifica diversa per ogni pericolo.
-     */
-    private ArrayList<String> actualRisks;
+
 
 
     //====================================================================================
@@ -100,16 +95,18 @@ public class DeviceScanActivity extends Activity {
             //---------------------------------------------------------------------------------------------
             // Chiamata GET per recuperare tutti i dispositivi registrati per permettere il filtraggio durante la scansione
 
-            // Creo l'oggetto Retrofit con il base url e il convertitore JSON
+            // TODO Rimuovere
+           /* // Creo l'oggetto Retrofit con il base url e il convertitore JSON
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
             // Instanzio l''interfaccia utilizzando l'oggetto appena creato
-            retrofitInterface = retrofit.create(RetrofitInterface.class);
+            retrofitInterface = retrofit.create(RetrofitInterface.class);*/
+            HttpController.start();
             // Creo una chiamata (GET) che ritorna una lista di SettingResult
-            Call<List<BeaconsResult>> call = retrofitInterface.getBeacons();
+            Call<List<BeaconsResult>> call = HttpController.getRetrofitInterface().getBeacons();
             // Inserisco la chiamata in una coda
             call.enqueue(new Callback<List<BeaconsResult>>() {
                 @Override
@@ -199,7 +196,6 @@ public class DeviceScanActivity extends Activity {
         ScanSettings settings = (new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)).build();
         List<ScanFilter> filters = listOfFilters; // Make a scan filter matching the beacons I care about
         bluetoothLeScanner.startScan(filters, settings, leScanCallback);
-        foundDevicesList = new ArrayList<>();
     }
 
     // Meotodo che ferma la scansione dei dispositivi BLE
@@ -342,17 +338,18 @@ public class DeviceScanActivity extends Activity {
     // Metodo per l'invio del rischio rilevato al server per il salvataggio nel database
     public void sendRiskResult(DangerResult DangerToSend) {
 
-        // Creo l'oggetto Retrofit con il base url e il convertitore JSON
+        HttpController.start();
+        /*// Creo l'oggetto Retrofit con il base url e il convertitore JSON
         retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         // Instanzio l''interfaccia utilizzando l'oggetto appena creato
-        retrofitInterface = retrofit.create(RetrofitInterface.class);
+        retrofitInterface = retrofit.create(RetrofitInterface.class);*/
 
         // Creo una chiamata (POST) che ritorna una lista di DangerResult
-        Call<DangerResult> call = retrofitInterface.insertRisk(DangerToSend);
+        Call<DangerResult> call = HttpController.getRetrofitInterface().insertRisk(DangerToSend);
         // Inserisco la chiamata in una coda
         call.enqueue(new Callback<DangerResult>() {
             @Override

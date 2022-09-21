@@ -16,9 +16,9 @@ import java.util.List;
 
 public class VisualizeActualSettingActivity extends AppCompatActivity {
 
-    private Retrofit retrofit;
+    /*private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
-    private final String BASE_URL = "http://10.20.11.166:3000";
+    private final String BASE_URL = "http://10.20.11.166:3000";*/
     private static SettingsResult actualSettings;
 
     public static SettingsResult getActualSettings() {
@@ -43,16 +43,18 @@ public class VisualizeActualSettingActivity extends AppCompatActivity {
             }
         });
 
-        // Creo l'oggetto Retrofit con il base url e il convertitore JSON
+        HttpController.start();
+
+        /*// Creo l'oggetto Retrofit con il base url e il convertitore JSON
         retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         // Instanzio l''interfaccia utilizzando l'oggetto appena creato
-        retrofitInterface = retrofit.create(RetrofitInterface.class);
+        retrofitInterface = retrofit.create(RetrofitInterface.class);*/
         // Creo una chiamata (GET) che ritorna una lista di SettingResult
-        Call<List<SettingsResult>> call = retrofitInterface.getSettings();
+        Call<List<SettingsResult>> call = HttpController.getRetrofitInterface().getSettings();
         // Inserisco la chiamata in una coda
         call.enqueue(new Callback<List<SettingsResult>>() {
             @Override
