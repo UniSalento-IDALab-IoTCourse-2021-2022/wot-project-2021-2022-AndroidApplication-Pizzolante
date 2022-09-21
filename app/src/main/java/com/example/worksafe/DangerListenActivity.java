@@ -118,8 +118,8 @@ public class DangerListenActivity extends AppCompatActivity {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Toast.makeText(DangerListenActivity.this, "Message: "+message+"\narrived to topic "+topic,
-                        Toast.LENGTH_SHORT).show();
+                //Toast.makeText(DangerListenActivity.this, "Message: "+message+"\narrived to topic "+topic,
+                        //Toast.LENGTH_SHORT).show();
 
                 // Estraggo il messaggio e lo trasformo in tipo String
                 String beaconId = new String(message.getPayload());

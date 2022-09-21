@@ -30,19 +30,25 @@ public class DeviceScanActivity extends Activity {
     final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
     private ArrayList<Integer> device_rssi;
     private ArrayList<String> device_mac;
+    private ArrayList<String> device_name;
     private ArrayList<String> device_info;
     ArrayAdapter<String> adapter;
     private Retrofit retrofit;
     private RetrofitInterface retrofitInterface;
-    private String BASE_URL = "http://172.20.10.6:3000";
+    private String BASE_URL = "http://10.20.11.166:3000";
     private List<ScanFilter> listOfFilters;
     private ArrayList<BeaconsResult> foundDevicesList;
     private SettingsResult actualSetting;
-    private DangerResult danger;
     private String workerID;
     private String topic = "worksafe/dangers";
     private String clientId = MqttClient.generateClientId();
     private MqttAndroidClient client ;
+    /*
+        Array dei dispositivi che si trovano vicini al lavoratore.
+        Serve come appoggio per generare una notifica diversa per ogni pericolo.
+     */
+    private ArrayList<String> actualRisks;
+
 
     //====================================================================================
 
@@ -118,9 +124,11 @@ public class DeviceScanActivity extends Activity {
                         ScanFilter filter = new ScanFilter.Builder().setDeviceAddress(beacon.getMac()).build();
                         listOfFilters.add(filter);
                     }
-                    // Creo due array: mac e rssi
+                    // Creo due array: mac, rssi e name
                     device_mac = new ArrayList<>();
                     device_rssi = new ArrayList<>();
+                    device_name= new ArrayList<>();
+                    device_name= new ArrayList<>();
                     // Creo l'arraylist per la visualizzazione dei dispositivi trovati
                     device_info = new ArrayList<>();
                     // Creo l'adapter che per l'aggiornamento della view
@@ -162,15 +170,17 @@ public class DeviceScanActivity extends Activity {
             // Getting the device
             BluetoothDevice device = result.getDevice();
 
-            // device_rssi.set(device_index, result.getRssi());
+           // Inserisco i valori del dispositivo trovato nei rispettivi array paralleli
+            // Se è un dispositivo nuovo lo aggiungo
             if (!device_mac.contains(device.getAddress())) {
                 device_mac.add(device.getAddress());
                 device_rssi.add(result.getRssi());      // Prendo l'RSSI una sola volta
+                device_name.add(device.getName());
                 device_info.add(String.format("Device: " + device.getName()
                         + "\nMAC:" + device.getAddress()
                         + "\nRSSI: " + result.getRssi() + ""));
                 adapter.notifyDataSetChanged();
-            }else{
+            }else{ // Se il dispositivo è già stato trovato aggiorno l'RSSI
                  int index = device_mac.indexOf(device.getAddress());
                  device_rssi.set(index,result.getRssi());
                  device_info.set(index, String.format("Device: " + device.getName()
@@ -178,24 +188,9 @@ public class DeviceScanActivity extends Activity {
                         + "\nRSSI: " + result.getRssi() + ""));
                 adapter.notifyDataSetChanged();
             }
-
-
-            //double[] dist= calculateDistances();
-            //evaluateDistance(dist);  ====> stopLeScan() if Risk != null
-            // Genero il timestamp con la data
-            Date date = new Date();
-            Timestamp timestamp = new Timestamp(date.getTime());
-            // Creo il rischio
-            DangerResult danger = new DangerResult(workerID,
-                                     device.getName(),
-                              " Attenzione!",
-                                  timestamp.toString());
-
-            //MqttPublish(client,topic,danger);
-            //notifyFoundDevice("Attenzione!");
-            //sendRiskResult(danger);
-            //stopLeScan();
-
+            // Calcolo la distanza e la valuto
+            double[] dist= calculateDistances();
+            evaluateDistance(dist);
         }
     };
 
@@ -207,15 +202,13 @@ public class DeviceScanActivity extends Activity {
         foundDevicesList = new ArrayList<>();
     }
 
-    // TODO: Fare in modo di stoppare la scansione quando si rileva un pericolo e si resume quando
-    //  si preme ok sulla notifica
     // Meotodo che ferma la scansione dei dispositivi BLE
     private void stopLeScan() {
         bluetoothLeScanner.stopScan(leScanCallback);
     }
 
     // Metodo che serve per inviare una notifica con un messaggio
-    private void notifyFoundDevice(String message) {
+    private void notifyFoundDevice(String message, int nCount) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
             NotificationChannel channel = new NotificationChannel("DEVICE_FOUND", "Channel1", importance);
@@ -225,20 +218,16 @@ public class DeviceScanActivity extends Activity {
             notificationManager.createNotificationChannel(channel);
         }
 
-        //Create the intent
-        //Intent intent=new Intent(this,DeviceScanActivity.class);
-        //PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),0,intent,0);
         // Create the notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "DEVICE_FOUND")
                 .setSmallIcon(R.drawable.worker_worker_icon_with_png_and_vector_format_for_free_481601)
-                //.addAction(0,"OK",pendingIntent)
                 .setContentTitle("Pericolo!")
                 .setContentText(message)
                 .setPriority(2)
                 .setVibrate(new long[]{1000, 1000});
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify(1, builder.build());
+        notificationManager.notify(nCount, builder.build());
     }
 
     // Metodo per il calcolo delle distanze utilizzando la tecnica del fingerprint
@@ -258,46 +247,63 @@ public class DeviceScanActivity extends Activity {
                 device_rssi.add(-100);
         }
 
-        System.out.println("RSSI VALUES DIM: " + device_rssi.size());
-        System.out.println("XI: " + xi);
+        for(int i=0; i<n; i++)
+            System.out.println(device_rssi.get(i)+" ");
         //Cerco la zona di riferimento q*
-        double localSum = 0;
+        double localSum = 0.0;
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                localSum += Math.sqrt(Math.pow(device_rssi.get(j), 2) - Math.pow(q[i][j], 2));
+                // Distanza euclidea
+                localSum += Math.sqrt(Math.abs(Math.pow(device_rssi.get(j), 2) - Math.pow(q[i][j], 2)));
             }
             eculidean_distances[i] = localSum;
             localSum = 0;
         }
+
+        for(int i=0; i<m; i++)
+            System.out.println(eculidean_distances[i]+" ");
         // find minimum in eculidean_distances
         int i_star = getMinReference(eculidean_distances);
         int[] q_star = q[i_star];
+
+        for(int i=0; i<n; i++)
+            System.out.println(q_star[i]+" ");
         double[] distances_c = new double[n];
         //Per ogni valore di p, trovo il valore più vicino in q* --> distanze di calibrazione
-        int distance = Math.abs(device_rssi.get(0) - q_star[0]);
         int j_star = 0;
         for (int i = 0; i < n; i++) {
+            int distance = Math.abs(device_rssi.get(i) - q_star[0]);
             for (int j = 1; j < n; j++) {
-                int cdistance = (device_rssi.get(0) - q_star[0]);
+                int cdistance =  Math.abs(device_rssi.get(j) - q_star[j]);
                 if (cdistance < distance) {
                     j_star = j;
                 }
             }
             distances_c[i] = d[i_star][j_star];
         }
+
+        for(int i=0; i<n; i++)
+            System.out.println(distances_c[i]+" ");
         // Dostanze di positioning con fuìormula
         double[] distances_p = new double[n];
         for (int i = 0; i < n; i++) {
-            distances_p[i] = Math.pow(10, (tx_power - device_rssi.get(i)) / 20);
+            distances_p[i] = Math.pow(10, (tx_power - device_rssi.get(i)) / 20.0);
+            distances_p[i] = round(distances_p[i],2);
         }
+
+        for(int i=0; i<n; i++)
+            System.out.println(distances_p[i]+" ");
         // Calcolo delle distanze finali
         double[] distances_f = new double[n];
         for (int i = 0; i < n; i++) {
-            if (Math.abs(distances_c[i] - distances_p[i]) < 1)
+            if (Math.abs(distances_c[i] - distances_p[i]) < 3)
                 distances_f[i] = distances_p[i];
             else
                 distances_f[i] = distances_c[i];
         }
+
+        for(int i=0; i<n; i++)
+            System.out.println(distances_f[i]+" ");
         return distances_f;
     }
 
@@ -313,25 +319,27 @@ public class DeviceScanActivity extends Activity {
     }
 
     // Metodo per la valutazione dela distanza di sicurezza partendo dall'array delle distanze finali
-    public DangerResult evaluateDistance(double[] distances) {
+    public void evaluateDistance(double[] distances) {
         for (int i = 0; i < distances.length; i++) {
-            if (distances[i] < 5.0) {
+            if (distances[i] < actualSetting.getSecurity_distance()) {
                 // Genero il messaggio
-                String deviceName = foundDevicesList.get(i).getName();
-                String message = "Sei a " + distances[i] + " metri da " + deviceName + "!";
+                String deviceName = device_name.get(i);
+                String alertMessage = "Sei a " + distances[i] + " metri da " + deviceName + "!";
                 // Genero il timestamp con la data
                 Date date = new Date();
                 Timestamp timestamp = new Timestamp(date.getTime());
-                notifyFoundDevice(message);
+                int c = device_name.indexOf(device_name.get(i));
+                notifyFoundDevice(alertMessage,c);
                 // Creo il rischio
-                return new DangerResult("", message, timestamp.toString(),deviceName);
+                DangerResult danger = new DangerResult(workerID, deviceName, alertMessage, timestamp.toString());
+                MqttPublish(client, topic, danger);
+                sendRiskResult(danger);
+                return;
             }
         }
-        return null;
     }
 
     // Metodo per l'invio del rischio rilevato al server per il salvataggio nel database
-    // TODO: Risolvere il messaggio " end of input at line 1 column 1 path $ "
     public void sendRiskResult(DangerResult DangerToSend) {
 
         // Creo l'oggetto Retrofit con il base url e il convertitore JSON
@@ -342,23 +350,20 @@ public class DeviceScanActivity extends Activity {
 
         // Instanzio l''interfaccia utilizzando l'oggetto appena creato
         retrofitInterface = retrofit.create(RetrofitInterface.class);
+
         // Creo una chiamata (POST) che ritorna una lista di DangerResult
         Call<DangerResult> call = retrofitInterface.insertRisk(DangerToSend);
         // Inserisco la chiamata in una coda
         call.enqueue(new Callback<DangerResult>() {
             @Override
             public void onResponse(Call<DangerResult> call, Response<DangerResult> response) {
-                if (response.code() == 200) {
-                    Toast.makeText(DeviceScanActivity.this, "Risk saved on Db correctly",
-                            Toast.LENGTH_LONG).show();
-                }
+                // something...
             }
 
 
             @Override
             public void onFailure(Call<DangerResult> call, Throwable t) {
-                Toast.makeText(DeviceScanActivity.this, t.getMessage(),
-                        Toast.LENGTH_LONG).show();
+                // something...
             }
         });
     }
@@ -394,11 +399,21 @@ public class DeviceScanActivity extends Activity {
             MqttMessage message = new MqttMessage(encodedPayload);
             client.publish(topic, message);
             // Avviso di corretta pubblicazione
-            Toast.makeText(DeviceScanActivity.this, "Published: "+message,
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(DeviceScanActivity.this, "Published: "+danger.getBeaconId(),
+                    Toast.LENGTH_SHORT).show();
         } catch (MqttException e) {
             e.printStackTrace();
         }
+    }
+
+    // Metodo che serve ad arrotondare le cifre dopo la virgola di un numero decimale
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
     }
 
 }
