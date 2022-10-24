@@ -17,11 +17,10 @@ import org.eclipse.paho.client.mqttv3.*;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 public class DeviceScanActivity extends Activity {
@@ -33,9 +32,6 @@ public class DeviceScanActivity extends Activity {
     private ArrayList<String> device_name;
     private ArrayList<String> device_info;
     ArrayAdapter<String> adapter;
-    /*private Retrofit retrofit;
-    private RetrofitInterface retrofitInterface;
-    private String BASE_URL = "http://10.20.11.166:3000";*/
     private List<ScanFilter> listOfFilters;
     private SettingsResult actualSetting;
     private String workerID;
@@ -95,15 +91,7 @@ public class DeviceScanActivity extends Activity {
             //---------------------------------------------------------------------------------------------
             // Chiamata GET per recuperare tutti i dispositivi registrati per permettere il filtraggio durante la scansione
 
-            // TODO Rimuovere
-           /* // Creo l'oggetto Retrofit con il base url e il convertitore JSON
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
-
-            // Instanzio l''interfaccia utilizzando l'oggetto appena creato
-            retrofitInterface = retrofit.create(RetrofitInterface.class);*/
+            // Inizializzo il controller HTTP (Retrofit)
             HttpController.start();
             // Creo una chiamata (GET) che ritorna una lista di SettingResult
             Call<List<BeaconsResult>> call = HttpController.getRetrofitInterface().getBeacons();
@@ -280,7 +268,7 @@ public class DeviceScanActivity extends Activity {
 
         for(int i=0; i<n; i++)
             System.out.println(distances_c[i]+" ");
-        // Dostanze di positioning con fuìormula
+        // Dostanze di positioning con formula RSSI
         double[] distances_p = new double[n];
         for (int i = 0; i < n; i++) {
             distances_p[i] = Math.pow(10, (tx_power - device_rssi.get(i)) / 20.0);
@@ -322,12 +310,11 @@ public class DeviceScanActivity extends Activity {
                 String deviceName = device_name.get(i);
                 String alertMessage = "Sei a " + distances[i] + " metri da " + deviceName + "!";
                 // Genero il timestamp con la data
-                Date date = new Date();
-                Timestamp timestamp = new Timestamp(date.getTime());
+                String time = String.valueOf(System.currentTimeMillis());
                 int c = device_name.indexOf(device_name.get(i));
                 notifyFoundDevice(alertMessage,c);
                 // Creo il rischio
-                DangerResult danger = new DangerResult(workerID, deviceName, alertMessage, timestamp.toString());
+                DangerResult danger = new DangerResult(workerID, deviceName, alertMessage, time);
                 MqttPublish(client, topic, danger);
                 sendRiskResult(danger);
                 return;
@@ -339,15 +326,6 @@ public class DeviceScanActivity extends Activity {
     public void sendRiskResult(DangerResult DangerToSend) {
 
         HttpController.start();
-        /*// Creo l'oggetto Retrofit con il base url e il convertitore JSON
-        retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        // Instanzio l''interfaccia utilizzando l'oggetto appena creato
-        retrofitInterface = retrofit.create(RetrofitInterface.class);*/
-
         // Creo una chiamata (POST) che ritorna una lista di DangerResult
         Call<DangerResult> call = HttpController.getRetrofitInterface().insertRisk(DangerToSend);
         // Inserisco la chiamata in una coda

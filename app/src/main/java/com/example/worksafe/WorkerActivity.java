@@ -19,7 +19,7 @@ public class WorkerActivity extends AppCompatActivity {
         Button scan_button = findViewById(R.id.Start);
 
         // Definisco il campo ID del worker
-        TextView textWorkerID = findViewById(R.id.editTextWorkerID);
+        TextView textWorkerID = findViewById(R.id.editMachinistID);
 
         //Define and attach click listener
         scan_button.setOnClickListener(new View.OnClickListener() {
