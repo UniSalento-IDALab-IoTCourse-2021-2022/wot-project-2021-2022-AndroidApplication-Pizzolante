@@ -17,14 +17,13 @@ import java.util.*;
 public class MachinistActivity extends AppCompatActivity{
 
     private Spinner spinnerMachinaryIDs;
-    private final List<String>  machinaryDevices  = new ArrayList<>();;
+    private final List<String>  machinaryDevices  = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_machinist);
 
-        //BottomAppBar bar = findViewById(R.id.bottomAppBar);
         Button start_button = findViewById(R.id.Start);
 
         // Definisco il campo ID del worker
