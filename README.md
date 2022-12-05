@@ -2,9 +2,8 @@
 
 ## Introduzione
 
-L'app WorkSafe è un applicazione Android nata per essere utilizzata
-all'interno del progetto (SMART GRID - BRiC 34). Lo scopo dell'app è monitorare dei 
-pericoli in movimento all'interno del cantiere di lavoro. Per "pericoli in movimento" si 
+L'app WorkSafe è un applicazione Android nata con lo scopo di monitorare dei 
+pericoli in movimento all'interno di un cantiere di lavoro. Per "pericoli in movimento" si 
 fa riferimento a delle macchine operatrici che svolgono una particolare mansione 
 nel sito e sulle quali è stato installato un beacon BLE che consente loro di essere 
 rilevate. Ogni volta che un lavoratore supera la distanza di sicurezza prevista tra 
